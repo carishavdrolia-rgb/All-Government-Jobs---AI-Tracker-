@@ -1,0 +1,42 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root{--bg:#f7f7f5;--card:#fff;--tx:#1d1d1b;--mu:#6b6b66;--bd:#e2e2dc;--ac:#1a5fb4;--new:#c2410c}
+@media(prefers-color-scheme:dark){:root{--bg:#161615;--card:#212120;--tx:#eeeeea;--mu:#9a9a94;--bd:#33332f;--ac:#6ea8fe;--new:#fb923c}}
+body{margin:0;padding:14px;background:var(--bg);color:var(--tx);font:15px/1.4 system-ui,sans-serif;max-width:760px;margin:auto}
+h1{font-size:20px;margin:0 0 2px}.mu{color:var(--mu);font-size:12px}
+.bar{display:flex;gap:8px;margin:10px 0}
+button{background:var(--ac);color:#fff;border:0;border-radius:8px;padding:9px 14px;font-size:14px;font-weight:600}
+button:disabled{opacity:.6}
+input,select{box-sizing:border-box;width:100%;padding:9px;border:1px solid var(--bd);border-radius:8px;background:var(--card);color:var(--tx);font-size:14px;margin-bottom:6px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px;margin-bottom:8px}
+.top{display:flex;justify-content:space-between;gap:8px}.n{font-weight:600}
+a{color:var(--ac);text-decoration:none}a.o{border:1px solid var(--ac);border-radius:6px;padding:2px 8px;font-size:13px;white-space:nowrap;height:fit-content}
+.it{margin-top:7px;font-size:14px}.nw{color:var(--new);font-weight:700;font-size:12px}
+</style></head><body>
+<h1>Finance Govt Jobs Tracker</h1>
+<div class="mu" id="upd">Loading…</div>
+<div class="mu">Refreshes automatically every 6 hours.</div><div id="chips" style="margin:10px 0"></div>
+<input id="q" placeholder="Search organisation…" oninput="draw()">
+<select id="f" onchange="draw()"><option value="">All</option><option value="new">New in last 7 days</option><option value="has">With postings found</option></select>
+<div id="list"></div>
+<script>
+var R=[],CAT='';
+function esc(s){return String(s||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function isNew(x){if(!x.fs||x.fs==='base')return false;return (Date.now()-new Date(x.fs).getTime())<7*864e5}
+function chips(){var cs=['All'];R.forEach(function(r){if(cs.indexOf(r.cat)<0)cs.push(r.cat)});
+  document.getElementById('chips').innerHTML=cs.map(function(c){var on=(c==='All'&&!CAT)||c===CAT;return '<button class="chip" style="margin:0 6px 6px 0;'+(on?'':'background:var(--card);color:var(--tx);border:1px solid var(--bd)')+'" onclick="setCat(\''+c.replace(/'/g,"")+'\')">'+esc(c)+'</button>'}).join('')}
+function setCat(c){CAT=c==='All'?'':c;chips();draw()}
+fetch('data.json?'+Date.now()).then(function(r){return r.json()}).then(function(d){R=d.rows;document.getElementById('upd').textContent='Last update: '+d.updated;chips();draw()}).catch(function(){document.getElementById('upd').textContent='Data not available yet.'});
+function draw(){
+  var q=document.getElementById('q').value.toLowerCase(),f=document.getElementById('f').value,h='';
+  R.forEach(function(r){
+    if(CAT&&r.cat!==CAT)return;
+    if(q&&r.name.toLowerCase().indexOf(q)<0)return;
+    var nw=r.items.some(isNew);
+    if(f==='new'&&!nw)return;if(f==='has'&&!r.items.length)return;
+    h+='<div class="card"><div class="top"><div><div class="n">'+esc(r.name)+(nw?' <span class="nw">● NEW</span>':'')+'</div><div class="mu">'+esc(r.cat)+' · checked '+esc(r.checked)+'</div></div><a class="o" href="'+esc(r.url)+'" target="_blank">Official page ↗️</a></div>';
+    r.items.forEach(function(x){h+='<div class="it">'+(isNew(x)?'<span class="nw">NEW </span>':'')+'<a href="'+esc(x.u)+'" target="_blank">'+esc(x.t)+'</a>'+(x.d?'<div class="mu">Date seen: '+esc(x.d)+'</div>':'')+'</div>'});
+    if(r.err)h+='<div class="mu" style="margin-top:6px">'+esc(r.err)+'</div>';
+    h+='</div>'});
+  document.getElementById('list').innerHTML=h||'<div class="mu">No matches.</div>'}
+</script></body></html>
